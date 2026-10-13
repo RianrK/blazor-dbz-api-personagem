@@ -1,0 +1,118 @@
+@page "/"
+@using System.Text.Json.Serialization
+@inject HttpClient Http
+
+<PageTitle>Personagens Dragon Ball</PageTitle>
+
+<section class="page">
+    <h1>Informações do Personagem</h1>
+    <p class="intro">Consulte um personagem de Dragon Ball pelo ID da API.</p>
+
+    <div class="search-panel">
+        <label for="characterId">ID do personagem</label>
+        <div class="search-row">
+            <input id="characterId" type="number" min="1" @bind="id" @bind:event="oninput" />
+            <button class="search-button" @onclick="BuscarPersonagem" disabled="@carregando">
+                @(carregando ? "Buscando..." : "Buscar personagem")
+            </button>
+        </div>
+        <small>Exemplo: use o ID 1 para consultar o personagem do endpoint indicado na atividade.</small>
+    </div>
+
+    @if (!string.IsNullOrWhiteSpace(erro))
+    {
+        <div class="message error">@erro</div>
+    }
+
+    @if (personagem is not null)
+    {
+        <section class="character-card">
+            <h2>@personagem.Name</h2>
+            <p><strong>Nome:</strong> @personagem.Name</p>
+            <p><strong>Planeta de Origem:</strong> @(personagem.OriginPlanet?.Name ?? "Não informado")</p>
+
+            <h3>Transformações:</h3>
+            @if (personagem.Transformations is { Count: > 0 })
+            {
+                <ul>
+                    @foreach (var transformacao in personagem.Transformations)
+                    {
+                        <li>@transformacao.Name</li>
+                    }
+                </ul>
+            }
+            else
+            {
+                <p>Não há transformações cadastradas para este personagem.</p>
+            }
+        </section>
+    }
+    else if (buscaRealizada && string.IsNullOrWhiteSpace(erro))
+    {
+        <p>Nenhum personagem encontrado.</p>
+    }
+</section>
+
+@code {
+    private int id = 1;
+    private bool carregando;
+    private bool buscaRealizada;
+    private string? erro;
+    private Personagem? personagem;
+
+    private async Task BuscarPersonagem()
+    {
+        erro = null;
+        personagem = null;
+        buscaRealizada = false;
+
+        if (id < 1)
+        {
+            erro = "Digite um ID maior que zero.";
+            return;
+        }
+
+        carregando = true;
+        try
+        {
+            personagem = await Http.GetFromJsonAsync<Personagem>($"api/characters/{id}");
+            buscaRealizada = true;
+
+            if (personagem is null)
+                erro = "A API não retornou um personagem para esse ID.";
+        }
+        catch (HttpRequestException)
+        {
+            erro = "Não foi possível acessar a API. Confira sua conexão e tente novamente.";
+        }
+        catch (System.Text.Json.JsonException)
+        {
+            erro = "A resposta da API veio em um formato inesperado.";
+        }
+        finally
+        {
+            carregando = false;
+        }
+    }
+
+    public class Personagem
+    {
+        public int Id { get; set; }
+        public string Name { get; set; } = "";
+
+        [JsonPropertyName("originPlanet")]
+        public Planeta? OriginPlanet { get; set; }
+
+        public List<Transformacao>? Transformations { get; set; }
+    }
+
+    public class Planeta
+    {
+        public string Name { get; set; } = "";
+    }
+
+    public class Transformacao
+    {
+        public string Name { get; set; } = "";
+    }
+}

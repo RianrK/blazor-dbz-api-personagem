@@ -1,0 +1,15 @@
+@inherits LayoutComponentBase
+
+<div class="app-shell">
+    <aside class="sidebar">
+        <div class="brand">BlazorDbzPersonagem</div>
+        <nav class="nav-menu">
+            <NavLink href="" Match="NavLinkMatch.All" class="nav-item">
+                <span class="nav-icon">⌂</span> Home
+            </NavLink>
+        </nav>
+    </aside>
+    <main class="main-content">
+        @Body
+    </main>
+</div>
